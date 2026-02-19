@@ -1,0 +1,110 @@
+git init<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base Wish Well dApp</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 50px 20px; background-color: #f0f2f5; color: #1c1e21; }
+        .container { background: white; padding: 40px; border-radius: 20px; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 500px; width: 100%; }
+        button { background-color: #0052ff; color: white; border: none; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: 600; transition: 0.3s; }
+        button:hover { background-color: #0040c7; transform: translateY(-2px); }
+        input { padding: 12px; width: 80%; border: 2px solid #e1e4e8; border-radius: 12px; margin-bottom: 10px; font-size: 16px; }
+        #wishesList { margin-top: 30px; text-align: left; }
+        .wish-card { background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid #0052ff; font-size: 14px; }
+        .wish-card small { color: #65676b; display: block; margin-bottom: 5px; }
+        #status { margin-top: 20px; font-size: 14px; color: #0052ff; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🏺 Криниця бажань Base</h1>
+    <p>Мережа: <b>Base Sepolia</b></p>
+
+    <button id="connectBtn">🔌 Підключити гаманець</button>
+
+    <div id="wishSection" style="display:none;">
+        <p>Усього бажань у криниці: <b id="count">0</b></p>
+        <input type="text" id="wishInput" placeholder="Твоє бажання для блокчейну...">
+        <br>
+        <button id="sendBtn">✨ Кинути в криницю</button>
+
+        <div id="wishesList">
+            <h3>📜 Останні бажання:</h3>
+            <div id="listContent">Завантаження...</div>
+        </div>
+    </div>
+
+    <div id="status"></div>
+</div>
+
+<script>
+    const contractAddress = "0xFEA7b4375a445A8def5bfafe4934D6c10cAC7b6B";
+    const abi = [
+        "function castWish(string _message) external",
+        "function getCount() public view returns (uint256)",
+        "function allWishes(uint256) public view returns (address user, string message, uint256 time)"
+    ];
+
+    let provider, signer, contract;
+
+    async function init() {
+        if (window.ethereum) {
+            provider = new ethers.BrowserProvider(window.ethereum);
+            document.getElementById("connectBtn").onclick = connect;
+        } else {
+            alert("Встанови MetaMask!");
+        }
+    }
+
+    async function connect() {
+        try {
+            await provider.send("eth_requestAccounts", []);
+            signer = await provider.getSigner();
+            contract = new ethers.Contract(contractAddress, abi, signer);
+
+            document.getElementById("connectBtn").style.display = "none";
+            document.getElementById("wishSection").style.display = "block";
+            updateUI();
+        } catch (err) { console.error(err); }
+    }
+
+    async function updateUI() {
+        const count = await contract.getCount();
+        document.getElementById("count").innerText = count.toString();
+
+        let listHtml = "";
+        // Завантажуємо останні 5 бажань (або всі, якщо їх менше)
+        const total = Number(count);
+        for (let i = total - 1; i >= 0 && i >= total - 5; i--) {
+            const wish = await contract.allWishes(i);
+            listHtml += `
+                <div class="wish-card">
+                    <small>Від: ${wish.user.substring(0,6)}...${wish.user.substring(38)}</small>
+                    <b>${wish.message}</b>
+                </div>
+            `;
+        }
+        document.getElementById("listContent").innerHTML = listHtml || "Криниця поки порожня";
+    }
+
+    async function sendWish() {
+        const msg = document.getElementById("wishInput").value;
+        if (!msg) return;
+        try {
+            const tx = await contract.castWish(msg);
+            document.getElementById("status").innerText = "⏳ Транзакція в блокчейні...";
+            await tx.wait();
+            document.getElementById("status").innerText = "✅ Бажання прийнято!";
+            document.getElementById("wishInput").value = "";
+            updateUI();
+        } catch (err) { document.getElementById("status").innerText = "❌ Помилка"; }
+    }
+
+    document.getElementById("sendBtn").onclick = sendWish;
+    init();
+</script>
+</body>
+</html>
