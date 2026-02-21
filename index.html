@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Base Wish Well | Web3</title>
+    <title>Base Wish Well | Web3 & Swap</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -42,64 +42,65 @@
         }
 
         h1 { font-weight: 800; letter-spacing: -1.5px; margin-bottom: 8px; font-size: 2rem; }
-
         .network-badge {
             display: inline-block; padding: 6px 14px; background: #0052ff22;
             border-radius: 30px; color: #58a6ff; font-size: 13px; font-weight: 600; margin-bottom: 30px;
         }
 
         #wishForm { margin-top: 25px; display: none; }
-
         input {
             width: 100%; padding: 14px; background: rgba(0,0,0,0.4);
             border: 1px solid rgba(255,255,255,0.15); border-radius: 14px;
-            color: white; font-size: 16px; margin-bottom: 15px; outline: none; transition: 0.3s;
-            box-sizing: border-box;
+            color: white; font-size: 16px; margin-bottom: 15px; outline: none; box-sizing: border-box;
         }
-        input:focus { border-color: var(--primary); background: rgba(0,0,0,0.6); }
-
         button {
             width: 100%; padding: 15px; background: var(--primary);
             color: white; border: none; border-radius: 14px;
-            font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-bottom: 10px;
         }
         button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 82, 255, 0.4); }
-        button:disabled { background: #444; cursor: not-allowed; }
 
-        #wishesList { margin-top: 40px; text-align: left; max-height: 300px; overflow-y: auto; padding-right: 5px; }
-        #wishesList::-webkit-scrollbar { width: 4px; }
-        #wishesList::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .swap-section { margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
+        #swapWidgetContainer { display: none; margin-top: 20px; border-radius: 20px; overflow: hidden; }
 
+        #wishesList { margin-top: 30px; text-align: left; max-height: 200px; overflow-y: auto; }
         .wish-card {
-            background: rgba(255,255,255,0.03); padding: 16px;
-            border-radius: 16px; margin-bottom: 12px; border-left: 4px solid var(--primary);
-            animation: fadeIn 0.5s ease-out;
+            background: rgba(255,255,255,0.03); padding: 12px;
+            border-radius: 12px; margin-bottom: 8px; border-left: 3px solid var(--primary);
         }
-        .wish-address { font-size: 11px; color: var(--secondary); font-family: monospace; display: block; margin-bottom: 5px; }
-        .wish-content { font-size: 15px; line-height: 1.4; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .wish-address { font-size: 10px; color: var(--secondary); font-family: monospace; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🏺 Криниця Бажань</h1>
-    <div class="network-badge">Base Sepolia Testnet</div>
+    <div class="network-badge">Base Sepolia</div>
 
     <button id="connectBtn" onclick="connect()">🔌 Підключити гаманець</button>
 
     <div id="wishForm">
-        <input type="text" id="wishInput" placeholder="Напиши своє бажання тут...">
+        <input type="text" id="wishInput" placeholder="Твоє бажання...">
         <button id="sendBtn" onclick="sendWish()">✨ Загадати бажання</button>
     </div>
 
-    <div id="wishesList">
+    <div id="wishesList"></div>
+
+    <div class="swap-section">
+        <button style="background: #ff007a;" onclick="toggleSwap()">🔄 Обміняти токени (Swap)</button>
+        <div id="swapWidgetContainer">
+            <iframe
+                src="https://app.uniswap.org/#/swap?outputCurrency=0x4200000000000000000000000000000000000006&chain=base"
+                height="500px"
+                width="100%"
+                style="border: none; border-radius: 20px;"
+            ></iframe>
         </div>
+    </div>
 </div>
 
 <script>
-    const contractAddress = "0xfb1dee73426746899140052ff222152520fb1dee7"; // Твоя адреса
+    const contractAddress = "0xfb1dee73426746899140052ff222152520fb1dee7";
     const abi = [
         "function writeWish(string memory _content) public",
         "function getWishes() public view returns (tuple(address sender, string content, uint256 timestamp)[])"
@@ -108,67 +109,42 @@
     let signer = null;
     let contract = null;
 
+    function toggleSwap() {
+        const container = document.getElementById('swapWidgetContainer');
+        container.style.display = container.style.display === 'none' ? 'block' : 'none';
+    }
+
     async function connect() {
-        if (!window.ethereum) return alert("Встанови MetaMask!");
-
-        try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            signer = await provider.getSigner();
-            contract = new ethers.Contract(contractAddress, abi, signer);
-
-            document.getElementById('connectBtn').style.display = "none";
-            document.getElementById('wishForm').style.display = "block";
-            loadWishes();
-        } catch (e) {
-            console.error(e);
-        }
+        if (!window.ethereum) return alert("MetaMask!");
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        contract = new ethers.Contract(contractAddress, abi, signer);
+        document.getElementById('connectBtn').style.display = "none";
+        document.getElementById('wishForm').style.display = "block";
+        loadWishes();
     }
 
     async function loadWishes() {
         if (!contract) return;
-        try {
-            const wishes = await contract.getWishes();
-            const list = document.getElementById('wishesList');
-            list.innerHTML = "<h3 style='font-size: 14px; color: #888; margin-bottom: 15px;'>Останні записи:</h3>";
-
-            wishes.slice().reverse().forEach(wish => {
-                const div = document.createElement('div');
-                div.className = 'wish-card';
-                div.innerHTML = `
-                    <span class="wish-address">${wish.sender.substring(0, 6)}...${wish.sender.substring(38)}</span>
-                    <div class="wish-content">${wish.content}</div>
-                `;
-                list.appendChild(div);
-            });
-        } catch (e) {
-            console.error("Помилка завантаження:", e);
-        }
+        const wishes = await contract.getWishes();
+        const list = document.getElementById('wishesList');
+        list.innerHTML = "";
+        wishes.slice().reverse().forEach(wish => {
+            const div = document.createElement('div');
+            div.className = 'wish-card';
+            div.innerHTML = `<span class="wish-address">${wish.sender.slice(0,6)}...</span><br>${wish.content}`;
+            list.appendChild(div);
+        });
     }
 
     async function sendWish() {
         const input = document.getElementById('wishInput');
-        const btn = document.getElementById('sendBtn');
-        if (!input.value) return;
-
-        try {
-            btn.disabled = true;
-            btn.innerText = "⏳ Транзакція...";
-            const tx = await contract.writeWish(input.value);
-            await tx.wait();
-            input.value = "";
-            btn.innerText = "✨ Загадати бажання";
-            btn.disabled = false;
-            loadWishes();
-        } catch (e) {
-            alert("Помилка транзакції!");
-            btn.disabled = false;
-            btn.innerText = "✨ Загадати бажання";
-        }
+        const tx = await contract.writeWish(input.value);
+        await tx.wait();
+        input.value = "";
+        loadWishes();
     }
-
-    // Автоматичне завантаження, якщо гаманець вже підключений
-    if (window.ethereum && window.ethereum.selectedAddress) connect();
 </script>
 
 </body>
