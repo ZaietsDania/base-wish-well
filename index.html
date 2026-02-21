@@ -3,108 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Base Wish Well dApp</title>
+    <title>Base Wish Well | Web3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 50px 20px; background-color: #f0f2f5; color: #1c1e21; }
-        .container { background: white; padding: 40px; border-radius: 20px; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 500px; width: 100%; }
-        button { background-color: #0052ff; color: white; border: none; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: 600; transition: 0.3s; }
-        button:hover { background-color: #0040c7; transform: translateY(-2px); }
-        input { padding: 12px; width: 80%; border: 2px solid #e1e4e8; border-radius: 12px; margin-bottom: 10px; font-size: 16px; }
-        #wishesList { margin-top: 30px; text-align: left; }
-        .wish-card { background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid #0052ff; font-size: 14px; }
-        .wish-card small { color: #65676b; display: block; margin-bottom: 5px; }
-        #status { margin-top: 20px; font-size: 14px; color: #0052ff; font-weight: bold; }
+        :root {
+            --bg: #0a0a0a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --primary: #0052ff;
+            --text: #ffffff;
+            --secondary: #888888;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at top right, #0052ff22, transparent),
+                              radial-gradient(circle at bottom left, #0052ff11, transparent);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 28px;
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+
+        h1 { font-weight: 800; letter-spacing: -1.5px; margin-bottom: 8px; font-size: 2rem; }
+
+        .network-badge {
+            display: inline-block; padding: 6px 14px; background: #0052ff22;
+            border-radius: 30px; color: #58a6ff; font-size: 13px; font-weight: 600; margin-bottom: 30px;
+        }
+
+        #wishForm { margin-top: 25px; display: none; }
+
+        input {
+            width: 100%; padding: 14px; background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 14px;
+            color: white; font-size: 16px; margin-bottom: 15px; outline: none; transition: 0.3s;
+            box-sizing: border-box;
+        }
+        input:focus { border-color: var(--primary); background: rgba(0,0,0,0.6); }
+
+        button {
+            width: 100%; padding: 15px; background: var(--primary);
+            color: white; border: none; border-radius: 14px;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 82, 255, 0.4); }
+        button:disabled { background: #444; cursor: not-allowed; }
+
+        #wishesList { margin-top: 40px; text-align: left; max-height: 300px; overflow-y: auto; padding-right: 5px; }
+        #wishesList::-webkit-scrollbar { width: 4px; }
+        #wishesList::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        .wish-card {
+            background: rgba(255,255,255,0.03); padding: 16px;
+            border-radius: 16px; margin-bottom: 12px; border-left: 4px solid var(--primary);
+            animation: fadeIn 0.5s ease-out;
+        }
+        .wish-address { font-size: 11px; color: var(--secondary); font-family: monospace; display: block; margin-bottom: 5px; }
+        .wish-content { font-size: 15px; line-height: 1.4; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🏺 Криниця бажань Base</h1>
-    <p>Мережа: <b>Base Sepolia</b></p>
+    <h1>🏺 Криниця Бажань</h1>
+    <div class="network-badge">Base Sepolia Testnet</div>
 
-    <button id="connectBtn">🔌 Підключити гаманець</button>
+    <button id="connectBtn" onclick="connect()">🔌 Підключити гаманець</button>
 
-    <div id="wishSection" style="display:none;">
-        <p>Усього бажань у криниці: <b id="count">0</b></p>
-        <input type="text" id="wishInput" placeholder="Твоє бажання для блокчейну...">
-        <br>
-        <button id="sendBtn">✨ Кинути в криницю</button>
-
-        <div id="wishesList">
-            <h3>📜 Останні бажання:</h3>
-            <div id="listContent">Завантаження...</div>
-        </div>
+    <div id="wishForm">
+        <input type="text" id="wishInput" placeholder="Напиши своє бажання тут...">
+        <button id="sendBtn" onclick="sendWish()">✨ Загадати бажання</button>
     </div>
 
-    <div id="status"></div>
+    <div id="wishesList">
+        </div>
 </div>
 
 <script>
-    const contractAddress = "0xFEA7b4375a445A8def5bfafe4934D6c10cAC7b6B";
+    const contractAddress = "0xfb1dee73426746899140052ff222152520fb1dee7"; // Твоя адреса
     const abi = [
-        "function castWish(string _message) external",
-        "function getCount() public view returns (uint256)",
-        "function allWishes(uint256) public view returns (address user, string message, uint256 time)"
+        "function writeWish(string memory _content) public",
+        "function getWishes() public view returns (tuple(address sender, string content, uint256 timestamp)[])"
     ];
 
-    let provider, signer, contract;
-
-    async function init() {
-        if (window.ethereum) {
-            provider = new ethers.BrowserProvider(window.ethereum);
-            document.getElementById("connectBtn").onclick = connect;
-        } else {
-            alert("Встанови MetaMask!");
-        }
-    }
+    let signer = null;
+    let contract = null;
 
     async function connect() {
+        if (!window.ethereum) return alert("Встанови MetaMask!");
+
         try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             signer = await provider.getSigner();
             contract = new ethers.Contract(contractAddress, abi, signer);
 
-            document.getElementById("connectBtn").style.display = "none";
-            document.getElementById("wishSection").style.display = "block";
-            updateUI();
-        } catch (err) { console.error(err); }
+            document.getElementById('connectBtn').style.display = "none";
+            document.getElementById('wishForm').style.display = "block";
+            loadWishes();
+        } catch (e) {
+            console.error(e);
+        }
     }
 
-    async function updateUI() {
-        const count = await contract.getCount();
-        document.getElementById("count").innerText = count.toString();
+    async function loadWishes() {
+        if (!contract) return;
+        try {
+            const wishes = await contract.getWishes();
+            const list = document.getElementById('wishesList');
+            list.innerHTML = "<h3 style='font-size: 14px; color: #888; margin-bottom: 15px;'>Останні записи:</h3>";
 
-        let listHtml = "";
-        // Завантажуємо останні 5 бажань (або всі, якщо їх менше)
-        const total = Number(count);
-        for (let i = total - 1; i >= 0 && i >= total - 5; i--) {
-            const wish = await contract.allWishes(i);
-            listHtml += `
-                <div class="wish-card">
-                    <small>Від: ${wish.user.substring(0,6)}...${wish.user.substring(38)}</small>
-                    <b>${wish.message}</b>
-                </div>
-            `;
+            wishes.slice().reverse().forEach(wish => {
+                const div = document.createElement('div');
+                div.className = 'wish-card';
+                div.innerHTML = `
+                    <span class="wish-address">${wish.sender.substring(0, 6)}...${wish.sender.substring(38)}</span>
+                    <div class="wish-content">${wish.content}</div>
+                `;
+                list.appendChild(div);
+            });
+        } catch (e) {
+            console.error("Помилка завантаження:", e);
         }
-        document.getElementById("listContent").innerHTML = listHtml || "Криниця поки порожня";
     }
 
     async function sendWish() {
-        const msg = document.getElementById("wishInput").value;
-        if (!msg) return;
+        const input = document.getElementById('wishInput');
+        const btn = document.getElementById('sendBtn');
+        if (!input.value) return;
+
         try {
-            const tx = await contract.castWish(msg);
-            document.getElementById("status").innerText = "⏳ Транзакція в блокчейні...";
+            btn.disabled = true;
+            btn.innerText = "⏳ Транзакція...";
+            const tx = await contract.writeWish(input.value);
             await tx.wait();
-            document.getElementById("status").innerText = "✅ Бажання прийнято!";
-            document.getElementById("wishInput").value = "";
-            updateUI();
-        } catch (err) { document.getElementById("status").innerText = "❌ Помилка"; }
+            input.value = "";
+            btn.innerText = "✨ Загадати бажання";
+            btn.disabled = false;
+            loadWishes();
+        } catch (e) {
+            alert("Помилка транзакції!");
+            btn.disabled = false;
+            btn.innerText = "✨ Загадати бажання";
+        }
     }
 
-    document.getElementById("sendBtn").onclick = sendWish;
-    init();
+    // Автоматичне завантаження, якщо гаманець вже підключений
+    if (window.ethereum && window.ethereum.selectedAddress) connect();
 </script>
+
 </body>
 </html>
