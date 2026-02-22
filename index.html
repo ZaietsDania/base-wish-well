@@ -3,122 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Base Wish Well | Web3 & Swap</title>
+    <title>Base Wish Well | Monetized</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0a0a0a;
-            --card-bg: rgba(255, 255, 255, 0.05);
             --primary: #0052ff;
+            --gold: #ffd700;
             --text: #ffffff;
-            --secondary: #888888;
+            --card-bg: rgba(255, 255, 255, 0.05);
         }
-
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
+            background: var(--bg);
             background-image: radial-gradient(circle at top right, #0052ff22, transparent),
                               radial-gradient(circle at bottom left, #0052ff11, transparent);
             color: var(--text);
-            margin: 0;
             display: flex;
             justify-content: center;
-            align-items: center;
             min-height: 100vh;
+            margin: 0;
             padding: 20px;
         }
-
         .container {
             background: var(--card-bg);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
             padding: 40px;
             border-radius: 28px;
             width: 100%;
             max-width: 480px;
-            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            text-align: center;
         }
-
-        h1 { font-weight: 800; letter-spacing: -1.5px; margin-bottom: 8px; font-size: 2rem; }
-        .network-badge {
-            display: inline-block; padding: 6px 14px; background: #0052ff22;
-            border-radius: 30px; color: #58a6ff; font-size: 13px; font-weight: 600; margin-bottom: 30px;
-        }
-
-        #wishForm { margin-top: 25px; display: none; }
+        h1 { font-weight: 800; letter-spacing: -1.5px; }
+        #wishForm { display: none; margin-top: 25px; }
         input {
-            width: 100%; padding: 14px; background: rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.15); border-radius: 14px;
-            color: white; font-size: 16px; margin-bottom: 15px; outline: none; box-sizing: border-box;
+            width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4);
+            color: #fff; box-sizing: border-box; outline: none; transition: 0.3s;
         }
+        input:focus { border-color: var(--primary); }
         button {
             width: 100%; padding: 15px; background: var(--primary);
-            color: white; border: none; border-radius: 14px;
-            font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-bottom: 10px;
+            color: #fff; border: none; border-radius: 14px;
+            font-weight: 600; cursor: pointer; transition: 0.3s;
         }
         button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 82, 255, 0.4); }
 
-        .swap-section { margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
-        #swapWidgetContainer { display: none; margin-top: 20px; border-radius: 20px; overflow: hidden; }
-
-        #wishesList { margin-top: 30px; text-align: left; max-height: 200px; overflow-y: auto; }
+        #wishesList { margin-top: 30px; text-align: left; max-height: 400px; overflow-y: auto; }
         .wish-card {
-            background: rgba(255,255,255,0.03); padding: 12px;
-            border-radius: 12px; margin-bottom: 8px; border-left: 3px solid var(--primary);
+            background: rgba(255,255,255,0.03); padding: 16px;
+            border-radius: 16px; margin-bottom: 12px; border-left: 4px solid var(--primary);
+            position: relative;
         }
-        .wish-address { font-size: 10px; color: var(--secondary); font-family: monospace; }
+        .wish-card.premium {
+            border-left-color: var(--gold);
+            background: rgba(255, 215, 0, 0.07);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        .wish-amount { font-size: 11px; color: var(--gold); font-weight: 800; position: absolute; top: 10px; right: 15px; }
+        .wish-address { font-size: 10px; color: #888; display: block; margin-bottom: 5px; font-family: monospace; }
+        .wish-text { font-size: 15px; line-height: 1.4; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🏺 Криниця Бажань</h1>
-    <div class="network-badge">Base Sepolia</div>
+    <p style="color: #888; font-size: 14px;">Залиш своє побажання в блокчейні Base</p>
 
     <button id="connectBtn" onclick="connect()">🔌 Підключити гаманець</button>
 
     <div id="wishForm">
         <input type="text" id="wishInput" placeholder="Твоє бажання...">
+        <input type="number" id="amountInput" step="0.0001" placeholder="Донат у ETH (напр. 0.001)">
         <button id="sendBtn" onclick="sendWish()">✨ Загадати бажання</button>
     </div>
 
     <div id="wishesList"></div>
-
-    <div class="swap-section">
-        <button style="background: #ff007a;" onclick="toggleSwap()">🔄 Обміняти токени (Swap)</button>
-        <div id="swapWidgetContainer">
-            <iframe
-                src="https://app.uniswap.org/#/swap?outputCurrency=0x4200000000000000000000000000000000000006&chain=base"
-                height="500px"
-                width="100%"
-                style="border: none; border-radius: 20px;"
-            ></iframe>
-        </div>
-    </div>
 </div>
 
 <script>
-    const contractAddress = "0xfb1dee73426746899140052ff222152520fb1dee7";
+    // Твоя нова адреса контракту
+    const contractAddress = "0xfCb5ee473F8dF26fA54555f23aC18AA35597024f";
+
+    // Оновлений ABI для підтримки суми (amount)
     const abi = [
-        "function writeWish(string memory _content) public",
-        "function getWishes() public view returns (tuple(address sender, string content, uint256 timestamp)[])"
+        "function writeWish(string memory _content) public payable",
+        "function getWishes() public view returns (tuple(address sender, string content, uint256 amount, uint256 timestamp)[])"
     ];
 
-    let signer = null;
     let contract = null;
 
-    function toggleSwap() {
-        const container = document.getElementById('swapWidgetContainer');
-        container.style.display = container.style.display === 'none' ? 'block' : 'none';
-    }
-
     async function connect() {
-        if (!window.ethereum) return alert("MetaMask!");
+        if (!window.ethereum) return alert("Встанови MetaMask!");
         const provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
-        signer = await provider.getSigner();
+        const signer = await provider.getSigner();
         contract = new ethers.Contract(contractAddress, abi, signer);
         document.getElementById('connectBtn').style.display = "none";
         document.getElementById('wishForm').style.display = "block";
@@ -127,25 +110,56 @@
 
     async function loadWishes() {
         if (!contract) return;
-        const wishes = await contract.getWishes();
-        const list = document.getElementById('wishesList');
-        list.innerHTML = "";
-        wishes.slice().reverse().forEach(wish => {
-            const div = document.createElement('div');
-            div.className = 'wish-card';
-            div.innerHTML = `<span class="wish-address">${wish.sender.slice(0,6)}...</span><br>${wish.content}`;
-            list.appendChild(div);
-        });
+        try {
+            const wishes = await contract.getWishes();
+            const list = document.getElementById('wishesList');
+            list.innerHTML = "<h3 style='font-size: 14px; color: #888; margin-bottom: 15px;'>Останні бажання:</h3>";
+
+            wishes.slice().reverse().forEach(wish => {
+                const amountEth = ethers.formatEther(wish.amount);
+                const isPremium = wish.amount > 0n;
+                const div = document.createElement('div');
+                div.className = `wish-card ${isPremium ? 'premium' : ''}`;
+                div.innerHTML = `
+                    <span class="wish-address">${wish.sender.slice(0,6)}...${wish.sender.slice(-4)}</span>
+                    ${isPremium ? `<span class="wish-amount">💎 ${amountEth} ETH</span>` : ''}
+                    <div class="wish-text">${wish.content}</div>
+                `;
+                list.appendChild(div);
+            });
+        } catch (e) {
+            console.error("Помилка завантаження:", e);
+        }
     }
 
     async function sendWish() {
-        const input = document.getElementById('wishInput');
-        const tx = await contract.writeWish(input.value);
-        await tx.wait();
-        input.value = "";
-        loadWishes();
+        const content = document.getElementById('wishInput').value;
+        const amount = document.getElementById('amountInput').value || "0";
+        const btn = document.getElementById('sendBtn');
+
+        if (!content) return alert("Напиши бажання!");
+
+        try {
+            btn.disabled = true;
+            btn.innerText = "⏳ Підтвердження...";
+
+            const tx = await contract.writeWish(content, {
+                value: ethers.parseEther(amount)
+            });
+
+            await tx.wait();
+            document.getElementById('wishInput').value = "";
+            document.getElementById('amountInput').value = "";
+            btn.disabled = false;
+            btn.innerText = "✨ Загадати бажання";
+            loadWishes();
+        } catch (e) {
+            console.error(e);
+            alert("Помилка транзакції!");
+            btn.disabled = false;
+            btn.innerText = "✨ Загадати бажання";
+        }
     }
 </script>
-
 </body>
 </html>
